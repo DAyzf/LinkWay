@@ -1,5 +1,6 @@
 package com.linkway.Utils;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
@@ -30,13 +31,13 @@ import static android.content.Context.BIND_AUTO_CREATE;
 public class BluetoothConnectionUtils {
     private ServiceConnection serviceConnection;//蓝牙连接服务
     private BluetoothLeService bluetoothLeService;
-    private Context context;
+    private Activity activity;
     private MessageReturnInterface messageReturnInterface;//消息返回
     private String blueToothAddress;
     private Handler handler;
-    public BluetoothConnectionUtils(Context context,MessageReturnInterface messageReturnInterface,
+    public BluetoothConnectionUtils(Activity activity, MessageReturnInterface messageReturnInterface,
                                     String blueToothAddress){
-        this.context=context;
+        this.activity=activity;
         this.messageReturnInterface=messageReturnInterface;
         this.blueToothAddress=blueToothAddress;
         handler=new Handler();
@@ -47,7 +48,7 @@ public class BluetoothConnectionUtils {
             messageReturnInterface.Message("蓝牙地址为空");
             return;
         }
-        Intent intent=new Intent(context, BluetoothLeService.class);
+        Intent intent=new Intent(activity, BluetoothLeService.class);
         // 判断蓝牙是否正常,正常进行连接,不正常关闭自己
         serviceConnection = new ServiceConnection() {
             @Override
@@ -61,8 +62,8 @@ public class BluetoothConnectionUtils {
             @Override
             public void onServiceDisconnected(ComponentName name) {bluetoothLeService=null;}
         };
-        context.bindService(intent, serviceConnection,BIND_AUTO_CREATE);// 去启动蓝牙服务
-        context.registerReceiver(broadcastReceiver,makeGattUpdateIntentFilter());
+        activity.bindService(intent, serviceConnection,BIND_AUTO_CREATE);// 去启动蓝牙服务
+        activity.registerReceiver(broadcastReceiver,makeGattUpdateIntentFilter());
     }
     /* 意图过滤器 */
     private static IntentFilter makeGattUpdateIntentFilter() {
@@ -142,7 +143,7 @@ public class BluetoothConnectionUtils {
     }
     //在需要关闭连接的地方调用此方法
     public void closeTheBluetoothConnection(){
-        context.unbindService(serviceConnection);
+        activity.unbindService(serviceConnection);
         blueToothAddress=null;
         serviceConnection=null;
         bluetoothLeService=null;
