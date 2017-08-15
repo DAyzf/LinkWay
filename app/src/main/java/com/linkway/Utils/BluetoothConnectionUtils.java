@@ -92,7 +92,10 @@ public class BluetoothConnectionUtils {
                 bluetoothLeService.connect(blueToothAddress);
             }
         }else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)){
-            displayGattServices(bluetoothLeService.getSupportedGattServices());
+            List<BluetoothGattService> supportedGattServices = bluetoothLeService.getSupportedGattServices();
+            if(supportedGattServices!=null) {
+                displayGattServices(supportedGattServices);
+            }
         }else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)){
             String string = intent.getExtras().getString(BluetoothLeService.EXTRA_DATA);
             messageReturnInterface.OkMessage(string);
