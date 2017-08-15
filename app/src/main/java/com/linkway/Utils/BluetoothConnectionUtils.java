@@ -89,7 +89,7 @@ public class BluetoothConnectionUtils {
                 bluetoothLeService.connect(blueToothAddress);
             }
         }else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)){
-            if( bluetoothLeService!=null) {
+            if( bluetoothLeService != null) {
                 List<BluetoothGattService> supportedGattServices = bluetoothLeService.getSupportedGattServices();
                 if (supportedGattServices != null) {
                     displayGattServices(supportedGattServices);
