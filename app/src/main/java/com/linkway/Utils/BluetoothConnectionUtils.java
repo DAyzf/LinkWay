@@ -58,11 +58,8 @@ public class BluetoothConnectionUtils {
                 }
                 bluetoothLeService.connect(blueToothAddress);
             }
-
             @Override
-            public void onServiceDisconnected(ComponentName name) {
-                bluetoothLeService=null;
-            }
+            public void onServiceDisconnected(ComponentName name) {bluetoothLeService=null;}
         };
         context.bindService(intent, serviceConnection,BIND_AUTO_CREATE);// 去启动蓝牙服务
         context.registerReceiver(broadcastReceiver,makeGattUpdateIntentFilter());
@@ -92,9 +89,11 @@ public class BluetoothConnectionUtils {
                 bluetoothLeService.connect(blueToothAddress);
             }
         }else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)){
-            List<BluetoothGattService> supportedGattServices = bluetoothLeService.getSupportedGattServices();
-            if(supportedGattServices!=null) {
-                displayGattServices(supportedGattServices);
+            if( bluetoothLeService!=null) {
+                List<BluetoothGattService> supportedGattServices = bluetoothLeService.getSupportedGattServices();
+                if (supportedGattServices != null) {
+                    displayGattServices(supportedGattServices);
+                }
             }
         }else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)){
             String string = intent.getExtras().getString(BluetoothLeService.EXTRA_DATA);
