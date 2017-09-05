@@ -144,6 +144,7 @@ public class BluetoothConnectionUtils {
     //在需要关闭连接的地方调用此方法
     public void closeTheBluetoothConnection(){
         activity.unbindService(serviceConnection);
+        activity.unregisterReceiver(broadcastReceiver);
         blueToothAddress=null;
         serviceConnection=null;
         bluetoothLeService=null;
