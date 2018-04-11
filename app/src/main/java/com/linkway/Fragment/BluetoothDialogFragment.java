@@ -12,12 +12,16 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -32,29 +36,36 @@ import java.util.HashSet;
 import java.util.Objects;
 
 /**
- * Created by DA_LYL on 2017/08/02.
- * 蓝牙搜索界面
+ * Created by DA on 2018/4/11.
+ * DialogFragment版本
  */
-
-public class BluetoothFragment extends Fragment {
+@SuppressLint("ValidFragment")
+public class BluetoothDialogFragment extends DialogFragment {
     private RecyclerView rv_BlueToothAddress;
     private Button btn_Search;
+    private Window window;
+    private WindowManager.LayoutParams attributes;
+    private MessageReturnInterface messageReturnInterface;
     private BluetoothFragmentAdapter bluetoothFragmentAdapter;
     private ArrayList<BluetoothDevice> bluetoothDevices;//存储蓝牙的数组
     private BluetoothAdapter bluetoothAdapter;//扫描蓝牙的对象
     private BluetoothAdapter.LeScanCallback leScanCallback;//蓝牙扫描回调
     private MyHandler myHandler;
-    private MessageReturnInterface messageReturnInterface;
     private boolean blueToothEnable=false;
-    @SuppressLint("ValidFragment")
-    public BluetoothFragment(MessageReturnInterface messageReturnInterface){
+    public BluetoothDialogFragment(MessageReturnInterface messageReturnInterface){
         this.messageReturnInterface=messageReturnInterface;
     }
-    public BluetoothFragment(){}
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View inflate = View.inflate(getActivity(), R.layout.fragment_bluetooth, null);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View inflate = inflater.inflate(R.layout.fragment_bluetooth, container);
+        getDialog().requestWindowFeature(Window.FEATURE_NO_TITLE);
+        window = getDialog().getWindow();
+        if(window !=null){
+            attributes = window.getAttributes();
+            attributes.windowAnimations= R.style.DialogFragment;
+        }
         getViewObject(inflate);
         return inflate;
     }
@@ -65,16 +76,45 @@ public class BluetoothFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
+        setWindow(attributes,window);
         initData();
         initEvent();
+    }
+    protected void setWindow(WindowManager.LayoutParams attributes, Window window) {
+        attributes.dimAmount = 0f;
+        attributes.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        window.setAttributes(attributes);
+        DisplayMetrics dm = new DisplayMetrics();
+        Objects.requireNonNull(getActivity()).getWindowManager().getDefaultDisplay().getMetrics(dm);
+        WindowManager.LayoutParams layoutParams = window.getAttributes();
+        layoutParams.gravity = Gravity.CENTER;
+        layoutParams.width= dm.widthPixels;
+        layoutParams.height= dm.heightPixels;
+        window.setAttributes(layoutParams);
     }
     private void initData() {
         myHandler=new MyHandler(this);
         bluetoothDevices=new ArrayList<>();
         leScanCallback = new LeScanCallback();
-        bluetoothAdapter=((BluetoothManager) Objects.requireNonNull(getActivity()).getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+        bluetoothAdapter=((BluetoothManager) Objects.requireNonNull(
+                Objects.requireNonNull(getActivity())
+                        .getSystemService(Context.BLUETOOTH_SERVICE))).getAdapter();
         rv_BlueToothAddress.setLayoutManager(new LinearLayoutManager(getActivity()));
         rv_BlueToothAddress.setAdapter(bluetoothFragmentAdapter = new BluetoothFragmentAdapter());
+    }
+    //判断蓝牙是否能用
+    public int isBluetooth(){
+        int isBluetooth=0;
+        if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            isBluetooth=1;
+        }
+        BluetoothAdapter bluetoothAdapter =
+                ((BluetoothManager) Objects.requireNonNull(getActivity()
+                        .getSystemService(Context.BLUETOOTH_SERVICE))).getAdapter();
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+            isBluetooth=2;
+        }
+        return isBluetooth;
     }
     private void initEvent() {
         btn_Search.setOnClickListener(new View.OnClickListener() {
@@ -135,21 +175,7 @@ public class BluetoothFragment extends Fragment {
         BluetoothDevice bluetoothDevice = bluetoothDevices.get(position);
         messageReturnInterface.OkMessage(bluetoothDevice.getAddress());
         myHandler.sendMessage(myHandler.obtainMessage(0,"蓝牙保存成功:"+bluetoothDevice.getName()));
-        getActivity().finish();
-    }
-    //判断蓝牙是否能用
-    public int isBluetooth(){
-        int isBluetooth=0;
-        if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            isBluetooth=1;
-        }
-        BluetoothAdapter bluetoothAdapter =
-                ((BluetoothManager) Objects.requireNonNull(getActivity()
-                        .getSystemService(Context.BLUETOOTH_SERVICE))).getAdapter();
-        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-            isBluetooth=2;
-        }
-        return isBluetooth;
+        getDialog().dismiss();
     }
     @Override
     public void onDestroy() {
@@ -165,12 +191,13 @@ public class BluetoothFragment extends Fragment {
     private class BluetoothFragmentAdapter extends RecyclerView.Adapter<BluetoothFragmentAdapter.MyViewHolder> {
         @NonNull
         @Override
-        public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new MyViewHolder(LayoutInflater.from(parent.getContext()).
+        public BluetoothFragmentAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new BluetoothFragmentAdapter.MyViewHolder(LayoutInflater.from(parent.getContext()).
                     inflate(R.layout.item_bluetooth_fragment, parent, false));
         }
         @Override
-        public void onBindViewHolder(@NonNull MyViewHolder holder, @SuppressLint("RecyclerView") final int position) {
+        public void onBindViewHolder(@NonNull BluetoothFragmentAdapter.MyViewHolder holder,
+                                     @SuppressLint("RecyclerView") final int position) {
             BluetoothDevice bluetoothDevice = bluetoothDevices.get(position);
             holder.text_Name.setText(bluetoothDevice.getName());
             holder.text_Address.setText(bluetoothDevice.getAddress());
@@ -195,9 +222,10 @@ public class BluetoothFragment extends Fragment {
     }
     //handler
     @SuppressLint("HandlerLeak")
-    private class MyHandler extends Handler{
-        private final WeakReference<BluetoothFragment> baseActivityWeakReference;
-        MyHandler(BluetoothFragment fragment) {baseActivityWeakReference = new WeakReference<>(fragment);}
+    private class MyHandler extends Handler {
+        private final WeakReference<BluetoothDialogFragment> baseActivityWeakReference;
+        MyHandler(BluetoothDialogFragment dialogFragment) {
+            baseActivityWeakReference = new WeakReference<>(dialogFragment);}
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
