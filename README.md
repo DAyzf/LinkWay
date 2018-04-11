@@ -6,4 +6,4 @@ allprojects {
         maven { url 'https://jitpack.io' }
     }
 }
- compile 'com.github.DAyzf:LinkWay:1.0'
+ compile 'com.github.DAyzf:LinkWay:1.4'
